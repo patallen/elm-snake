@@ -1,30 +1,33 @@
-module Display exposing (draw)
-import Css exposing (Style, displayFlex, alignItems, center, justifyContent)
-import Point exposing (Point)
-import CssMain exposing (snakeBlock, apple, game)
-import Game exposing (State)
+module Display exposing (draw, Pixel, pixel)
+
 import Html.Styled exposing (..)
 import Html.Styled.Attributes exposing (css, href, src)
-import Snake exposing (Snake)
+
+import Styles.CssMain exposing (game, pixelCss)
 
 
-drawBlock : (Point -> Style)  -> Point -> Html msg
-drawBlock blockstyle  point = div [css [(blockstyle point)]][]
+type alias RGB = (Int, Int, Int)
 
-drawApple : Point -> Html msg
-drawApple point = drawBlock apple point
+type alias Coord = (Int, Int)
 
-drawSnakeBlock : Point -> Html msg
-drawSnakeBlock point = drawBlock snakeBlock point
-
-drawSnake : Snake -> List (Html msg)
-drawSnake snake = List.map drawSnakeBlock snake.body
+type alias Pixel =
+  { loc: Coord
+  , color: RGB
+  }
 
 
-draw : Game.State -> Html msg
-draw state =
-  div
-    [ css
-      [ game 60 40 20 ]
-    ]
-    <| [drawApple state.apple] ++ drawSnake state.snake
+pixel : RGB -> Coord -> Pixel
+pixel color loc  = { loc = loc, color = color }
+
+
+drawPixel : Int -> Pixel -> Html msg
+drawPixel size ({loc, color}) = div [ css [pixelCss size color loc] ][ ]
+
+drawPixels : Int -> List Pixel -> List (Html msg)
+drawPixels size pixels = List.map (drawPixel size) pixels
+
+
+draw : List Pixel -> Html msg
+draw pixels =
+  div [ css [ game 60 40 20 ] ] (drawPixels 20 pixels)
+

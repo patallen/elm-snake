@@ -9,9 +9,9 @@ type Action = Up | Down | Left | Right | Shoot | Pause | Quit | NoOp
 convertKey : KeyCode -> Action
 convertKey key =
   case key of
-    83 -> Up
+    87 -> Up
+    83 -> Down
     65 -> Left
-    87 -> Down
     68 -> Right
     32 -> Shoot
     80 -> Pause

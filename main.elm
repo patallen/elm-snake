@@ -1,20 +1,25 @@
-import CssMain exposing (mainview)
+import Time
+
 import Html.Styled exposing (..)
 import Html.Styled.Attributes  exposing (css)
-import Point exposing (Point, point)
-import Game exposing (..)
-import Snake exposing (snake)
-import GamePad exposing (..)
-import Display exposing (draw)
-import Time
 import Keyboard
 
+import Display exposing (draw, pixel, Pixel)
+import Game exposing (..)
+import GamePad exposing (..)
+import Styles.CssMain exposing (mainview)
+
+
 gFPS = 10
+gWIDTH = 60
+gHEIGHT = 40
+gBLOCKSIZE = 20
+
 
 type Msg = Tick Time.Time | KeyMsg Keyboard.KeyCode
 
 
-main : Program Never State Msg
+main : Program Never GameState Msg
 main = program
     { init = init
     , view = view
@@ -23,49 +28,37 @@ main = program
     }
 
 
-init : ( Game.State, Cmd Msg )
+init : ( GameState, Cmd Msg )
 init =
     ( model , Cmd.none )
 
 
-model : Game.State
-model =
-    { snake = snake 10 10 (point 1 0)
-    , apple = point 2 2
-    , events = [Right]
-    , status = NewGame
-    }
+model : GameState
+model = defaultGameState
 
 
-
-view : Game.State -> Html msg
+view : GameState -> Html msg
 view state =
   body
     [ css [ mainview 80 80 80 ]]
-    [ Display.draw state ]
+    [ Display.draw ((List.map (pixel (0, 200, 0)) state.snake.body) ++ [(pixel (200, 0, 0) state.apple)])]
 
-update : Msg -> Game.State -> (Game.State, Cmd msg)
+
+update : Msg -> GameState -> (GameState, Cmd msg)
 update msg state =
   case msg of
-    Tick(t) -> let res =
-      state
-        |> checkCollision
-        |> checkBoundaries
-        |> moveSnake
-        |> cleanup
-        |> updateDirection
-      in (res, Cmd.none)
-    KeyMsg code -> let res = (case (convertKey code) of
-        NoOp -> state
+    Tick(t)     -> (step state, Cmd.none)
+    KeyMsg code ->
+      let res = (case (convertKey code) of
+        NoOp  -> state
         Pause -> state
-        Quit -> state
+        Quit  -> state
         Shoot -> state
-        evt -> Game.enqueueEvent state evt)
-        in
-        (res, Cmd.none)
+        evt    -> Game.enqueueEvent state evt)
+      in (res, Cmd.none)
 
 
-subscriptions : Game.State -> Sub Msg
+subscriptions : GameState -> Sub Msg
 subscriptions model =
     Sub.batch
       [ Time.every (fpsMillis gFPS) Tick

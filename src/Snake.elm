@@ -1,27 +1,35 @@
-module Snake exposing (Snake, move, head, ungrow, snake)
+module Snake exposing (Snake, move, ungrow, snake, Block)
 
-import Point exposing (Point, point)
+import Engine.Vector as Vec exposing (vec2, add2, Vec2i, sub2)
+
+
+type alias Block = Vec2i
+type alias SnakeBody = List Block
+
 
 type alias Snake =
-  { velocity: Point
-  , body: List Point
+  { velocity: Vec2i
+  , body: SnakeBody
   , eating: Bool
   }
 
-move : Snake -> Point -> Snake
-move snake dir =
-  { snake
-  | body =
-    List.append snake.body [Point.add dir (head snake)] }
-
-head : Snake -> Point
-head snake = Maybe.withDefault (point 0 0) (List.head (List.reverse snake.body))
+move : Snake -> Snake
+move snake =
+ case snake.body of
+   [] -> snake
+   x::xs -> let ns = grow snake in
+     if not snake.eating then ungrow ns else ns
 
 
-ungrow : Snake -> Snake
-ungrow snake = case snake.body of
-  _::xs -> { snake | body = xs }
+grow : Snake -> Snake
+grow snake = case snake.body of
+  x::_ -> {snake | body = [add2 x snake.velocity] ++ snake.body}
   _ -> snake
 
-snake : Int -> Int -> Point -> Snake
-snake x y dir = {body = [point x y], velocity = dir, eating = False}
+ungrow : Snake -> Snake
+ungrow snake = case List.reverse snake.body of
+  _::xs -> { snake | body = List.reverse xs }
+  _ -> snake
+
+snake : Int -> Int -> Vec2i -> Snake
+snake x y dir = {body = [vec2 x y], velocity = dir, eating = False}
