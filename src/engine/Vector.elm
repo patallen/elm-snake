@@ -16,6 +16,11 @@ vec2 x y =
     ( x, y )
 
 
+cmp2 : Vec2i -> Vec2i -> Bool
+cmp2 ( ax, ay ) ( bx, by ) =
+    ax == bx && ay == by
+
+
 mod2 : Vec2i -> Vec2i -> Vec2i
 mod2 ( ax, ay ) ( bx, by ) =
     ( ax % bx, ay % by )

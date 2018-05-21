@@ -34,6 +34,6 @@ drawPixels size pixels =
     List.map (drawPixel size) pixels
 
 
-draw : List Pixel -> Html msg
-draw pixels =
-    div [ css [ game 60 40 20 ] ] (drawPixels 20 pixels)
+draw : Int -> Int -> Int -> List Pixel -> Html msg
+draw w h bs pixels =
+    div [ css [ game w h bs ] ] (drawPixels bs pixels)

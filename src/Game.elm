@@ -1,10 +1,26 @@
-module Game exposing (GameState, defaultGameState, enqueueEvent, fpsMillis, step)
+module Game
+    exposing
+        ( GameState
+        , Msg(..)
+        , defaultGameState
+        , enqueueEvent
+        , fpsMillis
+        , step
+        )
 
 import Engine.Environment exposing (Environment, environ)
 import Engine.Vector exposing (vec2)
 import GamePad exposing (Action(..))
+import Keyboard
+import Random exposing (Generator)
 import Snake exposing (Block, Snake, snake)
 import Time exposing (Time)
+
+
+type Msg
+    = Tick Time.Time
+    | KeyMsg Keyboard.KeyCode
+    | RandomApple ( Int, Int )
 
 
 type Status
@@ -23,10 +39,10 @@ type alias GameState =
     }
 
 
-defaultGameState : GameState
-defaultGameState =
+defaultGameState : Int -> Int -> GameState
+defaultGameState width height =
     { snake = snake 10 10 ( 1, 0 )
-    , environ = environ 60 40 20
+    , environ = environ width height
     , apple = ( 9, 10 )
     , events = [ Up ]
     , status = NewGame
@@ -36,19 +52,45 @@ defaultGameState =
 checkGameOver : GameState -> GameState
 checkGameOver state =
     if state.status == GameOver then
-        defaultGameState
+        { state | snake = snake 10 10 ( 1, 0 ) }
     else
         state
 
 
-step : GameState -> GameState
+step : GameState -> ( GameState, Cmd Msg )
 step state =
+    let
+        newState =
+            state
+                |> checkCollision
+                |> moveSnake
+                |> checkFood
+                |> wrapBoundaries
+                |> updateDirection
+                |> checkGameOver
+    in
+    ( newState
+    , if newState.snake.eating then
+        let
+            ( _, ( x, y ) ) =
+                state.environ.bounds
+        in
+        generateApple x y
+      else
+        Cmd.none
+    )
+
+
+checkFood : GameState -> GameState
+checkFood state =
     state
-        |> checkGameOver
-        |> checkCollision
-        |> moveSnake
-        |> wrapBoundaries
-        |> updateDirection
+        |> (\{ snake } ->
+                let
+                    sn =
+                        { snake | eating = Snake.willEat snake state.apple }
+                in
+                { state | snake = sn }
+           )
 
 
 fpsMillis : Int -> Time.Time
@@ -120,11 +162,11 @@ moveSnake state =
     { state | snake = Snake.move state.snake }
 
 
-adjustSnake : Snake -> Snake
-adjustSnake snake =
+adjustSnake : Snake -> ( Int, Int ) -> Snake
+adjustSnake snake ( x, y ) =
     case snake.body of
         ( lx, ly ) :: xs ->
-            { snake | body = [ vec2 (lx % 60) (ly % 40) ] ++ xs }
+            { snake | body = [ vec2 (lx % x) (ly % y) ] ++ xs }
 
         _ ->
             snake
@@ -132,7 +174,11 @@ adjustSnake snake =
 
 wrapBoundaries : GameState -> GameState
 wrapBoundaries state =
-    { state | snake = adjustSnake state.snake }
+    { state
+        | snake =
+            adjustSnake state.snake <|
+                Tuple.second state.environ.bounds
+    }
 
 
 checkCollision : GameState -> GameState
@@ -145,13 +191,9 @@ checkCollision state =
             state
 
         x :: xs ->
-            let
-                isMember =
-                    List.member x xs
-            in
             { state
                 | status =
-                    if isMember then
+                    if List.member x xs then
                         GameOver
                     else
                         Running
@@ -175,3 +217,13 @@ toPoint dir =
 
         _ ->
             Nothing
+
+
+pairGenerator : Int -> Int -> Generator ( Int, Int )
+pairGenerator x y =
+    Random.pair (Random.int 0 x) (Random.int 0 y)
+
+
+generateApple : Int -> Int -> Cmd Msg
+generateApple x y =
+    Random.generate RandomApple (pairGenerator x y)

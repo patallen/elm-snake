@@ -18,8 +18,8 @@ type alias Environment =
     }
 
 
-environ : Int -> Int -> Int -> Environment
-environ wdth hght blksize =
+environ : Int -> Int -> Environment
+environ wdth hght =
     { bounds = vec2 (vec2 0 0) (vec2 wdth hght)
     }
 

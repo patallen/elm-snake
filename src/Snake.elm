@@ -1,6 +1,6 @@
-module Snake exposing (Block, Snake, move, snake, ungrow)
+module Snake exposing (Block, Snake, move, snake, ungrow, willEat)
 
-import Engine.Vector as Vec exposing (Vec2i, add2, sub2, vec2)
+import Engine.Vector as Vec exposing (Vec2i, add2, cmp2, sub2, vec2)
 
 
 type alias Block =
@@ -35,6 +35,16 @@ move snake =
                 ns
 
 
+willEat : Snake -> Vec2i -> Bool
+willEat { body } apple =
+    case body of
+        x :: _ ->
+            cmp2 x apple
+
+        _ ->
+            False
+
+
 grow : Snake -> Snake
 grow snake =
     case snake.body of
@@ -48,6 +58,9 @@ grow snake =
 ungrow : Snake -> Snake
 ungrow snake =
     case List.reverse snake.body of
+        [ x ] ->
+            { snake | body = [ x ] }
+
         _ :: xs ->
             { snake | body = List.reverse xs }
 
